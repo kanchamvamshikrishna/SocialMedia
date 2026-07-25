@@ -18,4 +18,5 @@ public class MessageDto {
     private String imageUrl;
     private Instant createdAt;
     private boolean mine;
+    private boolean seen;
 }

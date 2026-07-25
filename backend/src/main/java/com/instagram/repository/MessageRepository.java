@@ -2,6 +2,7 @@ package com.instagram.repository;
 
 import com.instagram.model.Message;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,4 +19,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             + "GROUP BY CASE WHEN m2.sender.id = :userId THEN m2.recipient.id ELSE m2.sender.id END"
             + ") ORDER BY m.createdAt DESC")
     List<Message> findLatestMessagePerConversation(@Param("userId") Long userId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Message m SET m.seen = true WHERE m.sender.id = :senderId AND m.recipient.id = :recipientId AND m.seen = false")
+    void markThreadSeen(@Param("senderId") Long senderId, @Param("recipientId") Long recipientId);
 }

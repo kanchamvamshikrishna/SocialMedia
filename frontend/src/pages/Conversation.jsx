@@ -111,6 +111,11 @@ export default function Conversation() {
                   <img src={m.imageUrl} alt="Shared" className="mb-1 max-h-60 rounded-lg object-cover" />
                 )}
                 {m.text && <p>{m.text}</p>}
+                {m.mine && (
+                  <p className={`mt-1 text-right text-[10px] ${m.seen ? "text-white/90" : "text-white/60"}`}>
+                    {m.seen ? "Seen ✓✓" : "Delivered ✓"}
+                  </p>
+                )}
               </div>
             </div>
           ))

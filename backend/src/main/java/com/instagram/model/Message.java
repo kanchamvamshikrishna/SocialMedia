@@ -37,4 +37,8 @@ public class Message {
     @Builder.Default
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
+
+    @Builder.Default
+    @Column(name = "seen", nullable = false)
+    private boolean seen = false;
 }

@@ -34,8 +34,10 @@ public class MessageService {
                 .toList();
     }
 
+    @Transactional
     public List<MessageDto> getThread(User currentUser, String otherUsername) {
         User other = userService.getByUsername(otherUsername);
+        messageRepository.markThreadSeen(other.getId(), currentUser.getId());
         return messageRepository.findConversation(currentUser.getId(), other.getId()).stream()
                 .map(m -> toDto(m, currentUser))
                 .toList();
@@ -74,6 +76,7 @@ public class MessageService {
                 .imageUrl(message.getImageUrl())
                 .createdAt(message.getCreatedAt())
                 .mine(message.getSender().getId().equals(currentUser.getId()))
+                .seen(message.isSeen())
                 .build();
     }
 }
