@@ -37,7 +37,7 @@ public class Notification {
     private Post post;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(name = "is_read", nullable = false)
     private boolean read = false;
 
     @Builder.Default
