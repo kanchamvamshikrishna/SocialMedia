@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { extractErrorMessage } from "../services/api";
+import PasswordInput from "../components/PasswordInput";
 
 export default function Register() {
   const { register } = useAuth();
@@ -59,11 +60,9 @@ export default function Register() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">Password</label>
-          <input
+          <PasswordInput
             required
             minLength={8}
-            type="password"
-            className="input"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />

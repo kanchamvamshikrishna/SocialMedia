@@ -107,6 +107,7 @@ export default function Navbar() {
           Snapgram
         </Link>
 
+        {user && (
         <div ref={searchBoxRef} className="relative max-w-xs flex-1">
           <input
             value={query}
@@ -168,6 +169,7 @@ export default function Navbar() {
             </div>
           )}
         </div>
+        )}
 
         <nav className="ml-auto hidden items-center gap-4 text-sm font-medium sm:flex">
           {navLinks}

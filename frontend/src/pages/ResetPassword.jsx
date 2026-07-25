@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../services/authService";
 import { extractErrorMessage } from "../services/api";
+import PasswordInput from "../components/PasswordInput";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -49,12 +50,10 @@ export default function ResetPassword() {
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="card space-y-4 p-6">
-          <input
+          <PasswordInput
             required
             minLength={8}
-            type="password"
             placeholder="New password"
-            className="input"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />

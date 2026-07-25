@@ -90,8 +90,17 @@ class PostFlowIntegrationTest {
     }
 
     @Test
-    void explorerFeedIsPubliclyReadableWithoutAuthentication() throws Exception {
+    void exploreFeedRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/posts/explore"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void exploreFeedIsReadableWhenAuthenticated() throws Exception {
+        String token = registerAndGetToken("explorer_user", "explorer@example.com");
+
+        mockMvc.perform(get("/api/posts/explore")
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
 
