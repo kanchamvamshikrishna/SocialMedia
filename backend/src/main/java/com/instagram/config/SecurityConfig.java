@@ -42,7 +42,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/health").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/health", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/me").fullyAuthenticated()
                         .requestMatchers(HttpMethod.GET, "/api/posts/feed").fullyAuthenticated()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()

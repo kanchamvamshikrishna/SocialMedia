@@ -13,4 +13,6 @@ export const userService = {
       .then((r) => r.data);
   },
   toggleFollow: (username) => api.post(`/users/${username}/follow`).then((r) => r.data),
+  getFollowers: (username) => api.get(`/users/${username}/followers`).then((r) => r.data),
+  getFollowing: (username) => api.get(`/users/${username}/following`).then((r) => r.data),
 };

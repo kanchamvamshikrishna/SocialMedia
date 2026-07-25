@@ -61,4 +61,16 @@ public class UserController {
         User current = userService.resolve(authentication);
         return ResponseEntity.ok(followService.toggleFollow(username, current));
     }
+
+    @GetMapping("/{username}/followers")
+    public ResponseEntity<List<UserDto>> getFollowers(@PathVariable String username, Authentication authentication) {
+        User current = userService.resolveOrNull(authentication);
+        return ResponseEntity.ok(followService.getFollowers(username, current));
+    }
+
+    @GetMapping("/{username}/following")
+    public ResponseEntity<List<UserDto>> getFollowing(@PathVariable String username, Authentication authentication) {
+        User current = userService.resolveOrNull(authentication);
+        return ResponseEntity.ok(followService.getFollowing(username, current));
+    }
 }

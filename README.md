@@ -2,17 +2,23 @@
 
 A full-stack, Instagram-style social media app built as a technical assessment project.
 Users can register, log in, reset a forgotten password, upload a profile photo, share
-photo posts with captions, like, comment, share, and follow other users.
+photo posts with captions, like, comment, share, follow other users, and message each
+other directly.
 
 ## Features
 
 - **Auth**: register, login (JWT), forgot password, reset password
-- **Profiles**: bio, full name, avatar upload, follower/following counts
+- **Profiles**: bio, full name, avatar upload, follower/following counts with clickable
+  lists of who's actually in them
 - **Posts**: image upload + caption, home feed (people you follow), Explore grid (everyone)
 - **Engagement**: like/unlike, comment, delete your own comments/posts, native share sheet
   (falls back to "copy link") on every post
-- **Search**: look up other users by username from the navbar
+- **Direct messages**: one-to-one conversations with text and/or image attachments,
+  an inbox of recent conversations, and near-live updates while a thread is open (polling)
+- **Search**: look up other users by username from the navbar, with a per-browser
+  "recent searches" list (clear individual entries or all at once)
 - **Dark mode** toggle, persisted per-browser
+- **Mobile-responsive** layout, including a collapsing hamburger menu on small screens
 - **Pagination** on the feed and explore grid
 
 ## Tech stack
@@ -22,7 +28,7 @@ photo posts with captions, like, comment, share, and follow other users.
 | Frontend  | React 18 + Vite, React Router, Tailwind CSS, Axios                     |
 | Backend   | Java 17, Spring Boot 3 (Web, Security, Data JPA, Validation), JJWT     |
 | Database  | MySQL                                                                  |
-| Image storage | Vercel Blob (uploaded through the backend via its HTTP API)       |
+| Image storage | Vercel Blob in production; local disk in dev (see below) |
 | Auth      | JWT (stateless), BCrypt password hashing                              |
 | CI/CD     | GitHub Actions                                                         |
 | Frontend hosting | Vercel                                                          |
@@ -97,7 +103,9 @@ override via your shell/IDE run config or a `.env`-loading tool):
 | `JWT_EXPIRATION_MS` | Token lifetime | `86400000` (24h) |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated allowed frontend origins | `http://localhost:5173` |
 | `FRONTEND_URL` | Used to build the password-reset link | `http://localhost:5173` |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for image uploads | empty (uploads will fail until set) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for image uploads | empty → falls back to local disk, see below |
+| `UPLOAD_LOCAL_DIR` | Where local-fallback uploads are written | `uploads` (relative to the backend's working dir) |
+| `UPLOAD_PUBLIC_BASE_URL` | Base URL used to serve local-fallback uploads back | `http://localhost:8080/uploads` |
 
 The backend runs on `http://localhost:8080`.
 
@@ -124,6 +132,17 @@ provider (Resend, SES, Nodemailer+SMTP, etc.) later only touches
 `AuthService.forgotPassword()` in the backend — send the same link by email and drop the
 two `dev*` fields from the response.
 
+## Image uploads — how they work locally vs. in production
+
+`BlobStorageService` has two modes:
+
+- **`BLOB_READ_WRITE_TOKEN` set** (production): uploads go to real Vercel Blob storage
+  over its HTTP API.
+- **`BLOB_READ_WRITE_TOKEN` unset** (local dev, or anyone running this without a Vercel
+  account): uploads are written to local disk under `UPLOAD_LOCAL_DIR` and served back
+  through a `/uploads/**` static mapping (see `WebConfig`). No setup needed — post
+  images, avatars, and message attachments all work out of the box locally.
+
 ## API reference
 
 All endpoints are prefixed with `/api`. JWT-protected endpoints expect
@@ -141,6 +160,8 @@ All endpoints are prefixed with `/api`. JWT-protected endpoints expect
 | PUT | `/users/me` | Yes | Update full name / bio |
 | POST | `/users/me/avatar` | Yes | Upload a new avatar (multipart `file`) |
 | POST | `/users/{username}/follow` | Yes | Toggle follow/unfollow |
+| GET | `/users/{username}/followers` | No | List of users who follow `{username}` |
+| GET | `/users/{username}/following` | No | List of users `{username}` follows |
 | POST | `/posts/upload-image` | Yes | Upload a post image (multipart `file`), returns a URL |
 | POST | `/posts` | Yes | Create a post (`imageUrl`, `caption`) |
 | GET | `/posts/explore` | No | Paginated, all posts, newest first |
@@ -152,6 +173,10 @@ All endpoints are prefixed with `/api`. JWT-protected endpoints expect
 | GET | `/posts/{postId}/comments` | No | List comments on a post |
 | POST | `/posts/{postId}/comments` | Yes | Add a comment |
 | DELETE | `/posts/{postId}/comments/{commentId}` | Yes (author or post owner) | Delete a comment |
+| GET | `/messages/conversations` | Yes | Your conversations, most recent first |
+| GET | `/messages/{username}` | Yes | Full message thread with `{username}` |
+| POST | `/messages/{username}` | Yes | Send a message (`text` and/or `imageUrl`) |
+| POST | `/messages/upload-image` | Yes | Upload a message image (multipart `file`), returns a URL |
 
 ## Deployment guide
 

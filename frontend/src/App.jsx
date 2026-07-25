@@ -11,6 +11,8 @@ import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
 import CreatePost from "./pages/CreatePost";
 import PostDetail from "./pages/PostDetail";
+import Messages from "./pages/Messages";
+import Conversation from "./pages/Conversation";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -47,6 +49,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <EditProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <Messages />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages/:username"
+            element={
+              <ProtectedRoute>
+                <Conversation />
               </ProtectedRoute>
             }
           />

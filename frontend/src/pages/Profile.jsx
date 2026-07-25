@@ -5,6 +5,7 @@ import { userService } from "../services/userService";
 import { postService } from "../services/postService";
 import Avatar from "../components/Avatar";
 import Loader from "../components/Loader";
+import UserListModal from "../components/UserListModal";
 
 export default function Profile() {
   const { username } = useParams();
@@ -14,6 +15,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [followBusy, setFollowBusy] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [listModal, setListModal] = useState(null); // "followers" | "following" | null
+  const [listUsers, setListUsers] = useState([]);
+  const [listLoading, setListLoading] = useState(false);
 
   const isOwnProfile = currentUser?.username === username;
 
@@ -39,6 +43,24 @@ export default function Profile() {
     }
   }
 
+  function openFollowers() {
+    setListModal("followers");
+    setListLoading(true);
+    userService
+      .getFollowers(username)
+      .then(setListUsers)
+      .finally(() => setListLoading(false));
+  }
+
+  function openFollowing() {
+    setListModal("following");
+    setListLoading(true);
+    userService
+      .getFollowing(username)
+      .then(setListUsers)
+      .finally(() => setListLoading(false));
+  }
+
   if (loading) return <Loader label="Loading profile..." />;
   if (notFound || !profile) {
     return <p className="py-20 text-center text-sm text-gray-500">User not found.</p>;
@@ -57,20 +79,29 @@ export default function Profile() {
               </Link>
             ) : (
               currentUser && (
-                <button
-                  onClick={handleToggleFollow}
-                  disabled={followBusy}
-                  className={profile.followedByCurrentUser ? "btn-secondary !px-3 !py-1 text-sm" : "btn-primary !px-3 !py-1 text-sm"}
-                >
-                  {profile.followedByCurrentUser ? "Following" : "Follow"}
-                </button>
+                <>
+                  <button
+                    onClick={handleToggleFollow}
+                    disabled={followBusy}
+                    className={profile.followedByCurrentUser ? "btn-secondary !px-3 !py-1 text-sm" : "btn-primary !px-3 !py-1 text-sm"}
+                  >
+                    {profile.followedByCurrentUser ? "Following" : "Follow"}
+                  </button>
+                  <Link to={`/messages/${profile.username}`} className="btn-secondary !px-3 !py-1 text-sm">
+                    Message
+                  </Link>
+                </>
               )
             )}
           </div>
           <div className="mt-3 flex justify-center gap-6 text-sm sm:justify-start">
             <span><strong>{profile.postCount}</strong> posts</span>
-            <span><strong>{profile.followerCount}</strong> followers</span>
-            <span><strong>{profile.followingCount}</strong> following</span>
+            <button onClick={openFollowers} className="hover:underline">
+              <strong>{profile.followerCount}</strong> followers
+            </button>
+            <button onClick={openFollowing} className="hover:underline">
+              <strong>{profile.followingCount}</strong> following
+            </button>
           </div>
           {profile.fullName && <p className="mt-3 font-medium">{profile.fullName}</p>}
           {profile.bio && <p className="text-sm text-gray-600 dark:text-gray-400">{profile.bio}</p>}
@@ -90,6 +121,15 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {listModal && (
+        <UserListModal
+          title={listModal === "followers" ? "Followers" : "Following"}
+          users={listUsers}
+          loading={listLoading}
+          onClose={() => setListModal(null)}
+        />
+      )}
     </div>
   );
 }
