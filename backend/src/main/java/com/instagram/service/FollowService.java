@@ -4,6 +4,7 @@ import com.instagram.dto.FollowResponse;
 import com.instagram.dto.UserDto;
 import com.instagram.exception.ApiException;
 import com.instagram.model.Follow;
+import com.instagram.model.NotificationType;
 import com.instagram.model.User;
 import com.instagram.repository.FollowRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class FollowService {
 
     private final FollowRepository followRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     public List<UserDto> getFollowers(String username, User currentUser) {
         User target = userService.getByUsername(username);
@@ -50,6 +52,7 @@ public class FollowService {
         } else {
             followRepository.save(Follow.builder().follower(currentUser).following(target).build());
             nowFollowing = true;
+            notificationService.notify(target, currentUser, NotificationType.FOLLOW, null);
         }
 
         return FollowResponse.builder()

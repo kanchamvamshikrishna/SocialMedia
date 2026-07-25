@@ -2,6 +2,7 @@ package com.instagram.service;
 
 import com.instagram.dto.LikeResponse;
 import com.instagram.model.Like;
+import com.instagram.model.NotificationType;
 import com.instagram.model.Post;
 import com.instagram.model.User;
 import com.instagram.repository.LikeRepository;
@@ -15,6 +16,7 @@ public class LikeService {
 
     private final LikeRepository likeRepository;
     private final PostService postService;
+    private final NotificationService notificationService;
 
     @Transactional
     public LikeResponse toggleLike(Long postId, User currentUser) {
@@ -29,6 +31,7 @@ public class LikeService {
         } else {
             likeRepository.save(Like.builder().post(post).user(currentUser).build());
             nowLiked = true;
+            notificationService.notify(post.getUser(), currentUser, NotificationType.LIKE, post);
         }
 
         return LikeResponse.builder()

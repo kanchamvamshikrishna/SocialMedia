@@ -5,6 +5,7 @@ import com.instagram.dto.MessageDto;
 import com.instagram.dto.SendMessageRequest;
 import com.instagram.exception.ApiException;
 import com.instagram.model.Message;
+import com.instagram.model.NotificationType;
 import com.instagram.model.User;
 import com.instagram.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     public List<ConversationDto> getConversations(User currentUser) {
         return messageRepository.findLatestMessagePerConversation(currentUser.getId()).stream()
@@ -59,7 +61,9 @@ public class MessageService {
                 .imageUrl(noImage ? null : request.getImageUrl())
                 .build();
 
-        return toDto(messageRepository.save(message), currentUser);
+        Message saved = messageRepository.save(message);
+        notificationService.notify(recipient, currentUser, NotificationType.MESSAGE, null);
+        return toDto(saved, currentUser);
     }
 
     private MessageDto toDto(Message message, User currentUser) {

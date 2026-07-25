@@ -13,6 +13,7 @@ import CreatePost from "./pages/CreatePost";
 import PostDetail from "./pages/PostDetail";
 import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -86,6 +87,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Conversation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
               </ProtectedRoute>
             }
           />

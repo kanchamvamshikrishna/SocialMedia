@@ -15,11 +15,16 @@ other directly.
   (falls back to "copy link") on every post
 - **Direct messages**: one-to-one conversations with text and/or image attachments,
   an inbox of recent conversations, and near-live updates while a thread is open (polling)
+- **Notifications**: likes, comments, follows, new posts from people you follow, and
+  messages all generate a notification, with an unread-count badge in the navbar
+  (polling) and a notifications page to review/mark them read
 - **Search**: look up other users by username from the navbar, with a per-browser
   "recent searches" list (clear individual entries or all at once)
 - **Dark mode** toggle, persisted per-browser
 - **Mobile-responsive** layout, including a collapsing hamburger menu on small screens
 - **Pagination** on the feed and explore grid
+- **Login required to view anything** — Explore, profiles, and posts are gated behind
+  authentication (no public browsing); only auth pages are open
 
 ## Tech stack
 
@@ -145,38 +150,57 @@ two `dev*` fields from the response.
 
 ## API reference
 
-All endpoints are prefixed with `/api`. JWT-protected endpoints expect
-`Authorization: Bearer <token>`.
+All endpoints are prefixed with `/api`. Every endpoint requires
+`Authorization: Bearer <token>` **except** `/auth/**`, `/health`, and `/uploads/**` —
+there is no public/anonymous browsing of profiles, posts, or Explore.
 
-| Method | Endpoint | Auth? | Description |
-|---|---|---|---|
-| POST | `/auth/register` | No | Create an account, returns JWT + profile |
-| POST | `/auth/login` | No | Log in with username/email + password |
-| POST | `/auth/forgot-password` | No | Generate a reset token (dev-mode: returned in response) |
-| POST | `/auth/reset-password` | No | Consume a reset token, set a new password |
-| GET | `/users/me` | Yes | Current user's profile |
-| GET | `/users/{username}` | No | Public profile lookup |
-| GET | `/users/search/{query}` | No | Search usernames |
-| PUT | `/users/me` | Yes | Update full name / bio |
-| POST | `/users/me/avatar` | Yes | Upload a new avatar (multipart `file`) |
-| POST | `/users/{username}/follow` | Yes | Toggle follow/unfollow |
-| GET | `/users/{username}/followers` | No | List of users who follow `{username}` |
-| GET | `/users/{username}/following` | No | List of users `{username}` follows |
-| POST | `/posts/upload-image` | Yes | Upload a post image (multipart `file`), returns a URL |
-| POST | `/posts` | Yes | Create a post (`imageUrl`, `caption`) |
-| GET | `/posts/explore` | No | Paginated, all posts, newest first |
-| GET | `/posts/feed` | Yes | Paginated, posts from people you follow (+ your own) |
-| GET | `/posts/user/{username}` | No | Paginated, one user's posts |
-| GET | `/posts/{id}` | No | Single post |
-| DELETE | `/posts/{id}` | Yes (owner) | Delete a post |
-| POST | `/posts/{id}/like` | Yes | Toggle like/unlike |
-| GET | `/posts/{postId}/comments` | No | List comments on a post |
-| POST | `/posts/{postId}/comments` | Yes | Add a comment |
-| DELETE | `/posts/{postId}/comments/{commentId}` | Yes (author or post owner) | Delete a comment |
-| GET | `/messages/conversations` | Yes | Your conversations, most recent first |
-| GET | `/messages/{username}` | Yes | Full message thread with `{username}` |
-| POST | `/messages/{username}` | Yes | Send a message (`text` and/or `imageUrl`) |
-| POST | `/messages/upload-image` | Yes | Upload a message image (multipart `file`), returns a URL |
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/auth/register` | Create an account, returns JWT + profile (no auth) |
+| POST | `/auth/login` | Log in with username/email + password (no auth) |
+| POST | `/auth/forgot-password` | Generate a reset token (dev-mode: returned in response, no auth) |
+| POST | `/auth/reset-password` | Consume a reset token, set a new password (no auth) |
+| GET | `/users/me` | Current user's profile |
+| GET | `/users/{username}` | Profile lookup |
+| GET | `/users/search/{query}` | Search usernames |
+| PUT | `/users/me` | Update full name / bio |
+| POST | `/users/me/avatar` | Upload a new avatar (multipart `file`) |
+| POST | `/users/{username}/follow` | Toggle follow/unfollow |
+| GET | `/users/{username}/followers` | List of users who follow `{username}` |
+| GET | `/users/{username}/following` | List of users `{username}` follows |
+| POST | `/posts/upload-image` | Upload a post image (multipart `file`), returns a URL |
+| POST | `/posts` | Create a post (`imageUrl`, `caption`) |
+| GET | `/posts/explore` | Paginated, all posts, newest first |
+| GET | `/posts/feed` | Paginated, posts from people you follow (+ your own) |
+| GET | `/posts/user/{username}` | Paginated, one user's posts |
+| GET | `/posts/{id}` | Single post |
+| DELETE | `/posts/{id}` | Delete a post (owner only) |
+| POST | `/posts/{id}/like` | Toggle like/unlike |
+| GET | `/posts/{postId}/comments` | List comments on a post |
+| POST | `/posts/{postId}/comments` | Add a comment |
+| DELETE | `/posts/{postId}/comments/{commentId}` | Delete a comment (author or post owner) |
+| GET | `/messages/conversations` | Your conversations, most recent first |
+| GET | `/messages/{username}` | Full message thread with `{username}` |
+| POST | `/messages/{username}` | Send a message (`text` and/or `imageUrl`) |
+| POST | `/messages/upload-image` | Upload a message image (multipart `file`), returns a URL |
+| GET | `/notifications` | Paginated notifications, most recent first |
+| GET | `/notifications/unread-count` | `{ "count": N }` for the navbar badge |
+| POST | `/notifications/{id}/read` | Mark one notification read |
+| POST | `/notifications/read-all` | Mark all notifications read |
+
+### Notifications — what triggers one
+
+| Trigger | Type | Recipient(s) |
+|---|---|---|
+| Someone likes your post | `LIKE` | Post owner |
+| Someone comments on your post | `COMMENT` | Post owner |
+| Someone follows you | `FOLLOW` | The user being followed |
+| Someone you follow creates a post | `POST` | All of their followers |
+| Someone sends you a message | `MESSAGE` | The recipient |
+
+You never get notified about your own actions (liking/commenting on your own post,
+etc.). Unfollowing, unliking, or deleting content does not retroactively remove past
+notifications.
 
 ## Deployment guide
 

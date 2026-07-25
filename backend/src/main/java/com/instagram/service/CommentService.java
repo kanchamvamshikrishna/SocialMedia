@@ -4,6 +4,7 @@ import com.instagram.dto.CommentDto;
 import com.instagram.dto.CreateCommentRequest;
 import com.instagram.exception.ApiException;
 import com.instagram.model.Comment;
+import com.instagram.model.NotificationType;
 import com.instagram.model.Post;
 import com.instagram.model.User;
 import com.instagram.repository.CommentRepository;
@@ -20,6 +21,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostService postService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     public List<CommentDto> getComments(Long postId, User currentUser) {
         Post post = postService.getPostEntity(postId);
@@ -37,6 +39,7 @@ public class CommentService {
                 .text(request.getText())
                 .build();
         comment = commentRepository.save(comment);
+        notificationService.notify(post.getUser(), author, NotificationType.COMMENT, post);
         return toDto(comment, author);
     }
 

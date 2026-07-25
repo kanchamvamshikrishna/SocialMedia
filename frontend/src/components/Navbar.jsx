@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { userService } from "../services/userService";
+import { notificationService } from "../services/notificationService";
 import {
   addRecentSearch,
   clearRecentSearches,
@@ -10,6 +11,8 @@ import {
   removeRecentSearch,
 } from "../utils/recentSearches";
 import Avatar from "./Avatar";
+
+const UNREAD_POLL_INTERVAL_MS = 10000;
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -21,11 +24,29 @@ export default function Navbar() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [recent, setRecent] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const searchBoxRef = useRef(null);
 
   useEffect(() => {
     setRecent(getRecentSearches(user?.username));
   }, [user?.username]);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    let cancelled = false;
+    function poll() {
+      notificationService.getUnreadCount().then((count) => !cancelled && setUnreadCount(count));
+    }
+    poll();
+    const interval = setInterval(poll, UNREAD_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -76,6 +97,18 @@ export default function Navbar() {
       <Link to="/explore" className="hover:text-brand-500" onClick={() => setMobileMenuOpen(false)}>Explore</Link>
       <Link to="/create" className="hover:text-brand-500" onClick={() => setMobileMenuOpen(false)}>New post</Link>
       <Link to="/messages" className="hover:text-brand-500" onClick={() => setMobileMenuOpen(false)}>Messages</Link>
+      <Link
+        to="/notifications"
+        className="relative flex items-center gap-2 hover:text-brand-500"
+        onClick={() => setMobileMenuOpen(false)}
+      >
+        <span>🔔 Notifications</span>
+        {unreadCount > 0 && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-semibold text-white">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </Link>
       <button onClick={toggleTheme} className="text-left text-lg sm:text-center" title="Toggle theme">
         {theme === "dark" ? "☀️ Light mode" : "🌙 Dark mode"}
       </button>

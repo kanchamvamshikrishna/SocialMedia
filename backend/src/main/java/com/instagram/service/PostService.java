@@ -3,11 +3,13 @@ package com.instagram.service;
 import com.instagram.dto.CreatePostRequest;
 import com.instagram.dto.PostDto;
 import com.instagram.exception.ApiException;
+import com.instagram.model.NotificationType;
 import com.instagram.model.Post;
 import com.instagram.model.User;
 import com.instagram.repository.CommentRepository;
 import com.instagram.repository.FollowRepository;
 import com.instagram.repository.LikeRepository;
+import com.instagram.repository.NotificationRepository;
 import com.instagram.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,7 +28,9 @@ public class PostService {
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
     private final FollowRepository followRepository;
+    private final NotificationRepository notificationRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     @Transactional
     public PostDto createPost(User author, CreatePostRequest request) {
@@ -36,6 +40,11 @@ public class PostService {
                 .caption(request.getCaption())
                 .build();
         post = postRepository.save(post);
+
+        Post savedPost = post;
+        followRepository.findByFollowing(author)
+                .forEach(f -> notificationService.notify(f.getFollower(), author, NotificationType.POST, savedPost));
+
         return toDto(post, author);
     }
 
@@ -76,6 +85,7 @@ public class PostService {
         if (!post.getUser().getId().equals(currentUser.getId())) {
             throw ApiException.forbidden("You can only delete your own posts");
         }
+        notificationRepository.deleteByPost(post);
         commentRepository.deleteByPost(post);
         likeRepository.deleteByPost(post);
         postRepository.delete(post);
