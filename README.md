@@ -26,6 +26,9 @@ other directly.
 - **Login required to view anything** — Explore, profiles, and posts are gated behind
   authentication (no public browsing); only auth pages are open
 
+> For system design, architecture diagrams, and the scalability roadmap, see
+> **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
 ## Tech stack
 
 | Layer     | Choice                                                                 |
