@@ -20,6 +20,10 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.12.6</jjwt.version>
+        <!-- Explicit, since inheriting this from spring-boot-starter-parent's
+             pluginManagement wasn't reliably taking effect in this build setup.
+             Needed for @PathVariable/@RequestParam without an explicit name. -->
+        <maven.compiler.parameters>true</maven.compiler.parameters>
     </properties>
 
     <dependencies>
