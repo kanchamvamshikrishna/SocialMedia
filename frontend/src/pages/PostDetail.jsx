@@ -17,7 +17,11 @@ export default function PostDetail() {
     postService
       .getById(id)
       .then(setPost)
-      .catch(() => setNotFound(true))
+      .catch((err) => {
+        if (err?.response?.status !== 401) {
+          setNotFound(true);
+        }
+      })
       .finally(() => setLoading(false));
   }, [id]);
 

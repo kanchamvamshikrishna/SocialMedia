@@ -29,7 +29,14 @@ export default function Profile() {
         setProfile(profileData);
         setPosts(postsData.content);
       })
-      .catch(() => setNotFound(true))
+      .catch((err) => {
+        // A 401 means the session dropped -- the api interceptor already
+        // redirects to /login for that case, so don't also flash a
+        // misleading "user not found" here. Only a real 404 means that.
+        if (err?.response?.status !== 401) {
+          setNotFound(true);
+        }
+      })
       .finally(() => setLoading(false));
   }, [username]);
 

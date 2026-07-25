@@ -14,12 +14,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const hadSession = !!localStorage.getItem("token");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+
+      // Send the user to a clear "please log in" screen instead of leaving
+      // whatever page they were on to render a misleading error (e.g. a
+      // profile page treating "not authenticated" as "user not found").
+      if (hadSession && !PUBLIC_PATHS.includes(window.location.pathname)) {
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }
