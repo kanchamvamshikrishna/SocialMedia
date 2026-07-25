@@ -76,6 +76,7 @@ public class UserService {
 
     public List<UserDto> search(String query, User currentUser) {
         return userRepository.findByUsernameContainingIgnoreCase(query).stream()
+                .filter(u -> currentUser == null || !u.getId().equals(currentUser.getId()))
                 .map(u -> toDto(u, currentUser))
                 .toList();
     }
