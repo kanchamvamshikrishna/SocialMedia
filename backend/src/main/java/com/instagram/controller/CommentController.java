@@ -23,7 +23,7 @@ public class CommentController {
 
     @GetMapping
     public ResponseEntity<List<CommentDto>> getComments(@PathVariable Long postId, Authentication authentication) {
-        User current = currentUserOrNull(authentication);
+        User current = userService.resolveOrNull(authentication);
         return ResponseEntity.ok(commentService.getComments(postId, current));
     }
 
@@ -33,7 +33,7 @@ public class CommentController {
             @Valid @RequestBody CreateCommentRequest request,
             Authentication authentication
     ) {
-        User current = userService.getByUsername(authentication.getName());
+        User current = userService.resolve(authentication);
         return ResponseEntity.ok(commentService.addComment(postId, current, request));
     }
 
@@ -43,15 +43,8 @@ public class CommentController {
             @PathVariable Long commentId,
             Authentication authentication
     ) {
-        User current = userService.getByUsername(authentication.getName());
+        User current = userService.resolve(authentication);
         commentService.deleteComment(commentId, current);
         return ResponseEntity.noContent().build();
-    }
-
-    private User currentUserOrNull(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return null;
-        }
-        return userService.getByUsername(authentication.getName());
     }
 }

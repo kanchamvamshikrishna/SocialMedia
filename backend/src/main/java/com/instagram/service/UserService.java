@@ -8,6 +8,8 @@ import com.instagram.repository.FollowRepository;
 import com.instagram.repository.PostRepository;
 import com.instagram.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,27 @@ public class UserService {
     public User getById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("User not found"));
+    }
+
+    /** Resolves the caller for an endpoint that requires a logged-in user. */
+    public User resolve(Authentication authentication) {
+        return getByUsername(authentication.getName());
+    }
+
+    /**
+     * Resolves the caller for a public endpoint where being logged in only changes
+     * the response (e.g. "followedByCurrentUser"). Spring Security's default
+     * anonymous authentication filter means {@code authentication} is never
+     * literally null here -- unauthenticated requests carry an
+     * AnonymousAuthenticationToken instead, which this treats as "no user".
+     */
+    public User resolveOrNull(Authentication authentication) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return getByUsername(authentication.getName());
     }
 
     public UserDto getProfile(String username, User currentUser) {

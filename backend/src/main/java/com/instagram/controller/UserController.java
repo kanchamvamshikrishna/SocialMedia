@@ -27,49 +27,38 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserDto> me(Authentication authentication) {
-        User current = currentUser(authentication);
+        User current = userService.resolve(authentication);
         return ResponseEntity.ok(userService.toDto(current, current));
     }
 
     @GetMapping("/{username}")
     public ResponseEntity<UserDto> getProfile(@PathVariable String username, Authentication authentication) {
-        User current = currentUserOrNull(authentication);
+        User current = userService.resolveOrNull(authentication);
         return ResponseEntity.ok(userService.getProfile(username, current));
     }
 
     @GetMapping("/search/{query}")
     public ResponseEntity<List<UserDto>> search(@PathVariable String query, Authentication authentication) {
-        User current = currentUserOrNull(authentication);
+        User current = userService.resolveOrNull(authentication);
         return ResponseEntity.ok(userService.search(query, current));
     }
 
     @PutMapping("/me")
     public ResponseEntity<UserDto> updateProfile(@Valid @RequestBody UpdateProfileRequest request, Authentication authentication) {
-        User current = currentUser(authentication);
+        User current = userService.resolve(authentication);
         return ResponseEntity.ok(userService.updateProfile(current, request));
     }
 
     @PostMapping("/me/avatar")
     public ResponseEntity<UserDto> updateAvatar(@RequestParam("file") MultipartFile file, Authentication authentication) {
-        User current = currentUser(authentication);
+        User current = userService.resolve(authentication);
         String url = blobStorageService.upload(file, "avatars");
         return ResponseEntity.ok(userService.updateAvatar(current, url));
     }
 
     @PostMapping("/{username}/follow")
     public ResponseEntity<FollowResponse> toggleFollow(@PathVariable String username, Authentication authentication) {
-        User current = currentUser(authentication);
+        User current = userService.resolve(authentication);
         return ResponseEntity.ok(followService.toggleFollow(username, current));
-    }
-
-    private User currentUser(Authentication authentication) {
-        return userService.getByUsername(authentication.getName());
-    }
-
-    private User currentUserOrNull(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return null;
-        }
-        return userService.getByUsername(authentication.getName());
     }
 }

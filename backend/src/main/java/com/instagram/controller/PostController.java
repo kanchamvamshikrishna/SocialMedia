@@ -31,14 +31,14 @@ public class PostController {
 
     @PostMapping("/upload-image")
     public ResponseEntity<UploadResponse> uploadImage(@RequestParam("file") MultipartFile file, Authentication authentication) {
-        currentUser(authentication);
+        userService.resolve(authentication);
         String url = blobStorageService.upload(file, "posts");
         return ResponseEntity.ok(new UploadResponse(url));
     }
 
     @PostMapping
     public ResponseEntity<PostDto> createPost(@Valid @RequestBody CreatePostRequest request, Authentication authentication) {
-        User current = currentUser(authentication);
+        User current = userService.resolve(authentication);
         return ResponseEntity.ok(postService.createPost(current, request));
     }
 
@@ -48,7 +48,7 @@ public class PostController {
             @RequestParam(defaultValue = "12") int size,
             Authentication authentication
     ) {
-        User current = currentUserOrNull(authentication);
+        User current = userService.resolveOrNull(authentication);
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(postService.getExploreFeed(current, pageable));
     }
@@ -59,7 +59,7 @@ public class PostController {
             @RequestParam(defaultValue = "12") int size,
             Authentication authentication
     ) {
-        User current = currentUser(authentication);
+        User current = userService.resolve(authentication);
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(postService.getHomeFeed(current, pageable));
     }
@@ -71,38 +71,27 @@ public class PostController {
             @RequestParam(defaultValue = "12") int size,
             Authentication authentication
     ) {
-        User current = currentUserOrNull(authentication);
+        User current = userService.resolveOrNull(authentication);
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(postService.getUserPosts(username, current, pageable));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PostDto> getPost(@PathVariable Long id, Authentication authentication) {
-        User current = currentUserOrNull(authentication);
+        User current = userService.resolveOrNull(authentication);
         return ResponseEntity.ok(postService.getPost(id, current));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable Long id, Authentication authentication) {
-        User current = currentUser(authentication);
+        User current = userService.resolve(authentication);
         postService.deletePost(id, current);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/like")
     public ResponseEntity<LikeResponse> toggleLike(@PathVariable Long id, Authentication authentication) {
-        User current = currentUser(authentication);
+        User current = userService.resolve(authentication);
         return ResponseEntity.ok(likeService.toggleLike(id, current));
-    }
-
-    private User currentUser(Authentication authentication) {
-        return userService.getByUsername(authentication.getName());
-    }
-
-    private User currentUserOrNull(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return null;
-        }
-        return userService.getByUsername(authentication.getName());
     }
 }
