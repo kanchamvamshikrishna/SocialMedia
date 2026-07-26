@@ -35,7 +35,7 @@ other directly.
 |-----------|-------------------------------------------------------------------------|
 | Frontend  | React 18 + Vite, React Router, Tailwind CSS, Axios                     |
 | Backend   | Java 17, Spring Boot 3 (Web, Security, Data JPA, Validation), JJWT     |
-| Database  | MySQL                                                                  |
+| Database  | PostgreSQL                                                             |
 | Image storage | Vercel Blob in production; local disk in dev (see below) |
 | Auth      | JWT (stateless), BCrypt password hashing                              |
 | CI/CD     | GitHub Actions                                                         |
@@ -51,11 +51,13 @@ concerns the same way the initial project scaffold already anticipated:
   CI/CD pipeline (`.github/workflows/deploy.yml`) does that automatically on every push
   to `main`.
 - The **backend** (`backend/`) is a Spring Boot JAR/Docker image. It must run somewhere
-  that can execute a JVM process — e.g. [Render](https://render.com),
-  [Railway](https://railway.app), or [Fly.io](https://fly.io). The included
-  `backend/Dockerfile` builds a container image ready for any of those. CI builds and
-  tests it on every push/PR; the actual hosting deploy is a one-time manual setup on
-  your chosen platform (point it at this repo/Dockerfile, add the env vars below).
+  that can execute a JVM process — this project targets
+  [Render](https://render.com) (free web service + free Postgres, no credit card),
+  though [Railway](https://railway.app) or [Fly.io](https://fly.io) work too. The
+  included `backend/Dockerfile` builds a container image ready for any of those. CI
+  builds and tests it on every push/PR; the actual hosting deploy is a one-time manual
+  setup on your chosen platform (point it at this repo/Dockerfile, add the env vars
+  below).
 
 The frontend only ever talks to the backend over HTTP via `VITE_API_BASE_URL` — once the
 backend is deployed anywhere reachable, point the frontend at it and everything works.
@@ -89,14 +91,21 @@ instagram-clone/
 
 - Java 17+, Maven (or use your IDE's bundled Maven)
 - Node.js 20+
-- A local MySQL server (or adjust `DB_URL` to point elsewhere)
+- A local PostgreSQL server (or adjust `DB_URL` to point elsewhere)
 
 ### 1. Backend
 
+Unlike MySQL, Postgres won't auto-create the database for you, so create it once:
+
+```bash
+createdb instagram_clone
+# or: psql -U postgres -c "CREATE DATABASE instagram_clone;"
+```
+
+Then run the app (`ddl-auto=update` creates the tables on first start):
+
 ```bash
 cd backend
-# Create the database (or let ddl-auto=update create it — createDatabaseIfNotExist is on)
-# Then just run:
 mvn spring-boot:run
 ```
 
@@ -105,8 +114,8 @@ override via your shell/IDE run config or a `.env`-loading tool):
 
 | Variable | Purpose | Local default |
 |---|---|---|
-| `DB_URL` | JDBC URL | `jdbc:mysql://localhost:3306/instagram_clone?...` |
-| `DB_USERNAME` / `DB_PASSWORD` | MySQL credentials | `root` / `password` |
+| `DB_URL` | JDBC URL | `jdbc:postgresql://localhost:5432/instagram_clone` |
+| `DB_USERNAME` / `DB_PASSWORD` | Postgres credentials | `postgres` / `password` |
 | `JWT_SECRET` | HMAC signing key for JWTs | insecure placeholder — **must** be overridden in any real deployment |
 | `JWT_EXPIRATION_MS` | Token lifetime | `86400000` (24h) |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated allowed frontend origins | `http://localhost:5173` |
@@ -222,17 +231,27 @@ notifications.
    the frontend and runs `vercel deploy --prebuilt --prod`, pulling the
    `VITE_API_BASE_URL` value you set in step 2 automatically via `vercel pull`.
 
-### Backend → Render/Railway/Fly (or any host that runs a Docker image / JAR)
+### Backend → Render (recommended: free, no credit card)
 
-1. Point the platform at this repo with `backend/Dockerfile` as the build context, or
-   run `mvn clean package` and ship the resulting JAR directly.
-2. Provision a MySQL instance (PlanetScale, Railway MySQL, Aiven, or your host's
-   managed MySQL) and set `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` accordingly.
-3. Set `JWT_SECRET` to a long random string, `CORS_ALLOWED_ORIGINS` to your deployed
+1. Create a free **PostgreSQL** instance on Render (Dashboard → New → PostgreSQL). Free
+   instances expire 30 days after creation (14-day grace period after that) — plenty for
+   an assessment review window; upgrade later if this becomes a long-lived deployment.
+2. Create a free **Web Service** (Dashboard → New → Web Service), point it at this repo
+   with `backend/Dockerfile` as the build context. Free web services spin down after 15
+   minutes of inactivity and take ~1 minute to wake back up on the next request — normal
+   for the free tier, not a bug.
+3. Set `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` from the Postgres instance's connection
+   details (Render shows an "External Database URL" you can split into these three, or
+   just use `DATABASE_URL` directly if you prefer — either way, this app reads the three
+   separately).
+4. Set `JWT_SECRET` to a long random string, `CORS_ALLOWED_ORIGINS` to your deployed
    Vercel URL, and `FRONTEND_URL` to the same, so password-reset links point at the
    right place.
-4. Set `BLOB_READ_WRITE_TOKEN` from your Vercel project → Storage → Blob, so post/avatar
+5. Set `BLOB_READ_WRITE_TOKEN` from your Vercel project → Storage → Blob, so post/avatar
    image uploads work in production.
+
+Railway or Fly.io work too if you'd rather pay for Railway's Hobby tier or manage
+Fly's `fly.toml` — the Dockerfile is portable to either.
 
 ## Testing
 
@@ -243,5 +262,5 @@ mvn test
 
 Covers the JWT service (token issuance/validation/expiry) and end-to-end flows for
 register → login, and create post → like → comment, run against an in-memory H2
-database (see `src/test/resources/application.properties`) so no MySQL instance is
+database (see `src/test/resources/application.properties`) so no PostgreSQL instance is
 needed to run the suite.

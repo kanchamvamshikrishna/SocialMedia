@@ -14,7 +14,7 @@ is split into two independently deployable halves, connected only over HTTP:
 
 - **Frontend**: React 18 SPA (Vite), talks to the backend exclusively via a REST API.
 - **Backend**: Spring Boot 3 REST API, stateless (no server-side sessions), backed by
-  MySQL and pluggable image storage.
+  PostgreSQL and pluggable image storage.
 
 ```mermaid
 flowchart TB
@@ -31,7 +31,7 @@ flowchart TB
     end
 
     subgraph Storage["Storage"]
-        MySQL[("MySQL")]
+        Postgres[("PostgreSQL")]
         Blob["Vercel Blob (prod) /<br/>local disk (dev)"]
     end
 
@@ -41,7 +41,7 @@ flowchart TB
 
     Browser -->|"HTTPS (static assets)"| CDN
     Browser -->|"REST + Bearer JWT"| API
-    API --> MySQL
+    API --> Postgres
     API --> Blob
     Workflow -->|"mvn clean verify"| API
     Workflow -->|"vercel deploy --prod"| CDN
@@ -65,7 +65,7 @@ flowchart LR
     Client(["HTTP client"]) --> Controller
     Controller -->|"DTO in/out"| Service
     Service -->|"Entities"| Repository
-    Repository --> DB[("MySQL")]
+    Repository --> DB[("PostgreSQL")]
     Service -.uses.-> Cross["Cross-cutting services<br/>(NotificationService,<br/>BlobStorageService, JwtService)"]
 ```
 
@@ -175,7 +175,7 @@ sequenceDiagram
     participant U as Browser
     participant AC as AuthController
     participant AS as AuthService
-    participant DB as MySQL
+    participant DB as PostgreSQL
     participant JS as JwtService
 
     U->>AC: POST /api/auth/login
@@ -295,7 +295,7 @@ sequenceDiagram
     participant PS as PostService
     participant FR as FollowRepository
     participant NS as NotificationService
-    participant DB as MySQL
+    participant DB as PostgreSQL
 
     F->>PC: POST /api/posts {imageUrl, caption}
     PC->>PS: createPost(author, request)
@@ -363,9 +363,9 @@ additive — a new component bolted on — rather than a rewrite of existing cod
 |---|---|---|---|
 | **Compute** | Single Spring Boot instance | Run N replicas behind a load balancer | Nothing — auth is stateless JWT, there is no in-memory session state to make sticky |
 | **Real-time updates** | Client-side polling (4s for messages, 10s for notification count) | WebSocket (Spring STOMP) or SSE push | Only the transport in `Conversation.jsx`/`Navbar.jsx`; the DTOs and backend service methods stay identical |
-| **Read load** | Single MySQL instance | Add a read replica; route `GET`-heavy endpoints (explore/feed/search) to it | A `@Transactional(readOnly = true)` + routing datasource — repositories/services unchanged |
+| **Read load** | Single PostgreSQL instance | Add a read replica; route `GET`-heavy endpoints (explore/feed/search) to it | A `@Transactional(readOnly = true)` + routing datasource — repositories/services unchanged |
 | **Feed fan-out** | Fan-out-on-write per post (loop over followers) | For "celebrity" accounts with huge follower counts, switch to fan-out-on-read (compute feed at query time) for just those accounts | Isolated to `PostService.createPost` / `getHomeFeed`; `NotificationService.notify` signature doesn't change |
-| **Hot data** | Every request hits MySQL | Redis cache for unread notification counts, explore feed page 1 | Additive cache-aside in `NotificationService`/`PostService`; controllers untouched |
+| **Hot data** | Every request hits PostgreSQL | Redis cache for unread notification counts, explore feed page 1 | Additive cache-aside in `NotificationService`/`PostService`; controllers untouched |
 | **Media storage** | Local disk (dev) / Vercel Blob (prod) via `BlobStorageService` | Swap to S3 + CloudFront, or add image resizing on upload | Confined entirely to `BlobStorageService`; zero caller changes |
 | **New social features** (stories, reels, bookmarks, groups) | N/A yet | Add `Model` + `Repository` + `Service` + `Controller` + `Dto`, reuse `NotificationService.notify()` for alerts | New files only, following the existing per-entity pattern |
 | **Rate limiting / abuse prevention** | None yet | Add a filter (e.g., Bucket4j) in the same filter chain position as `JwtAuthenticationFilter` | One new filter bean; no controller changes |
@@ -379,7 +379,7 @@ makes the same codebase run in local dev, CI, and production without modificatio
 
 | Variable | Local default | Production |
 |---|---|---|
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | local MySQL | managed MySQL (PlanetScale/Railway/Aiven) |
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | local PostgreSQL | Render's managed PostgreSQL (free tier) |
 | `JWT_SECRET` | insecure placeholder | long random secret |
 | `BLOB_READ_WRITE_TOKEN` | unset → local disk fallback | Vercel Blob token |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | deployed Vercel URL |
