@@ -5,6 +5,26 @@ Users can register, log in, reset a forgotten password, upload a profile photo, 
 photo posts with captions, like, comment, share, follow other users, and message each
 other directly.
 
+## Live demo
+
+- **App**: https://social-media-seven-rouge.vercel.app
+- **API**: https://snapgram-backend-waim.onrender.com/api/health
+
+The backend is on Render's free tier, which spins down after 15 minutes of inactivity —
+the first request after a while can take up to ~50s to wake it back up. That's normal for
+the free tier, not a bug.
+
+## CI/CD
+
+`.github/workflows/deploy.yml` runs on every push/PR to `main`:
+- **Backend**: `mvn clean verify` (Spring Boot, JUnit, H2 in-memory DB)
+- **Frontend**: `npm ci && npm run build` (Vite)
+
+Both must pass before code is considered mergeable. Actual deployment happens via each
+platform's own native Git integration — Vercel auto-builds and deploys the frontend on
+every push to `main` (Root Directory: `frontend`), and Render does the same for the
+backend Docker image — so a green CI run and a live deploy happen from the same push.
+
 ## Features
 
 - **Auth**: register, login (JWT), forgot password, reset password
@@ -216,20 +236,17 @@ notifications.
 
 ## Deployment guide
 
-### Frontend → Vercel (via the included CI/CD pipeline)
+### Frontend → Vercel
 
 1. Create a new Vercel project and link it to this GitHub repo, with **Root Directory**
-   set to `frontend`. Do this once through the Vercel dashboard (or `vercel link` from
-   `frontend/`) so a project exists to deploy into.
+   set to `frontend`, through the Vercel dashboard. This wires up Vercel's native Git
+   integration, which auto-builds and deploys on every push to `main` from then on — no
+   deploy step needed in CI.
 2. In the Vercel project settings, add the environment variable `VITE_API_BASE_URL`
    pointing at your deployed backend's base URL (no trailing slash).
-3. In your GitHub repo settings → *Secrets and variables → Actions*, add:
-   - `VERCEL_TOKEN` — from Vercel → Account Settings → Tokens
-   - `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` — found in `frontend/.vercel/project.json`
-     after running `vercel link` locally once
-4. Push to `main`. `.github/workflows/deploy.yml` builds+tests the backend, then builds
-   the frontend and runs `vercel deploy --prebuilt --prod`, pulling the
-   `VITE_API_BASE_URL` value you set in step 2 automatically via `vercel pull`.
+3. Push to `main`. `.github/workflows/deploy.yml` builds+tests the backend and builds the
+   frontend as a CI gate (fails fast on a broken build); Vercel deploys independently on
+   the same push.
 
 ### Backend → Render (recommended: free, no credit card)
 
