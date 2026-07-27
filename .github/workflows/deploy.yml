@@ -62,6 +62,9 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
+      - name: Link Vercel project
+        run: vercel link --yes --token="$VERCEL_TOKEN" --project="$VERCEL_PROJECT_ID"
+
       - name: Pull Vercel project settings
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
