@@ -62,6 +62,12 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
+      - name: Sanitize Vercel env vars
+        run: |
+          printf 'VERCEL_TOKEN=%s\n' "$(printf '%s' "$VERCEL_TOKEN" | tr -d '\r\n')" >> "$GITHUB_ENV"
+          printf 'VERCEL_ORG_ID=%s\n' "$(printf '%s' "$VERCEL_ORG_ID" | tr -d '\r\n')" >> "$GITHUB_ENV"
+          printf 'VERCEL_PROJECT_ID=%s\n' "$(printf '%s' "$VERCEL_PROJECT_ID" | tr -d '\r\n')" >> "$GITHUB_ENV"
+
       - name: Link Vercel project
         run: vercel link --yes --token="$VERCEL_TOKEN" --project="$VERCEL_PROJECT_ID"
 
