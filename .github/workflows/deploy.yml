@@ -35,17 +35,11 @@ jobs:
           retention-days: 7
 
   frontend:
-    name: Frontend build & deploy to Vercel
+    name: Frontend build & test
     runs-on: ubuntu-latest
-    needs: backend
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     defaults:
       run:
         working-directory: frontend
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -59,23 +53,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+      - name: Build
+        run: npm run build
 
-      - name: Sanitize Vercel env vars
-        run: |
-          printf 'VERCEL_TOKEN=%s\n' "$(printf '%s' "$VERCEL_TOKEN" | tr -d '\r\n')" >> "$GITHUB_ENV"
-          printf 'VERCEL_ORG_ID=%s\n' "$(printf '%s' "$VERCEL_ORG_ID" | tr -d '\r\n')" >> "$GITHUB_ENV"
-          printf 'VERCEL_PROJECT_ID=%s\n' "$(printf '%s' "$VERCEL_PROJECT_ID" | tr -d '\r\n')" >> "$GITHUB_ENV"
-
-      - name: Link Vercel project
-        run: vercel link --yes --token="$VERCEL_TOKEN" --project="$VERCEL_PROJECT_ID"
-
-      - name: Pull Vercel project settings
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Build project artifacts
-        run: PATH="$PWD/node_modules/.bin:$PATH" vercel build --prod --token="$VERCEL_TOKEN"
-
-      - name: Deploy to Vercel (production)
-        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+  # Actual deployment to Vercel is handled by Vercel's native GitHub
+  # integration, which auto-builds and deploys this project on every
+  # push to main using its own Root Directory setting. Re-driving a
+  # second build/deploy through the Vercel CLI here would double-apply
+  # that Root Directory (since this job already cds into frontend/),
+  # so this job's only role is to fail CI fast if the frontend build
+  # itself is broken.
