@@ -44,4 +44,7 @@ public class User {
     @Builder.Default
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
+
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
 }

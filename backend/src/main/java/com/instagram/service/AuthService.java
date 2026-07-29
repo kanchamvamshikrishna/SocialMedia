@@ -58,6 +58,7 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         try {
             authenticationManager.authenticate(
@@ -70,6 +71,9 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsernameOrEmail())
                 .or(() -> userRepository.findByEmail(request.getUsernameOrEmail()))
                 .orElseThrow(() -> ApiException.unauthorized("Invalid username/email or password"));
+
+        user.setLastLoginAt(Instant.now());
+        userRepository.save(user);
 
         String token = jwtService.generateToken(user.getUsername());
         return AuthResponse.builder()
